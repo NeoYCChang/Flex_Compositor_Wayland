@@ -109,8 +109,9 @@ void Compositor::create()
     QWaylandOutput *output = new QWaylandOutput(this, m_window);
     QWaylandOutputMode mode(m_window->size(), 60000);
     output->addMode(mode, true);
-    QWaylandCompositor::create();
     output->setCurrentMode(mode);
+    QWaylandCompositor::create();
+
 
     m_iviApplication = new QWaylandIviApplication(this);
     connect(m_iviApplication, &QWaylandIviApplication::iviSurfaceCreated, this, &Compositor::onIviSurfaceCreated);
@@ -246,7 +247,7 @@ void Compositor::viewSurfaceDestroyed()
 void Compositor::triggerRender()
 {
     //m_window->requestUpdate();
-    emit requestUpdate();
+    startRender();
 }
 
 void Compositor::startRender()
@@ -254,6 +255,9 @@ void Compositor::startRender()
     QWaylandOutput *out = defaultOutput();
     if (out)
         out->frameStarted();
+    emit requestUpdate();
+
+    endRender();
 }
 
 void Compositor::endRender()

@@ -1,5 +1,7 @@
 #ifndef EGLRENDER_H
 #define EGLRENDER_H
+
+#include <QObject>
 #include <QOffscreenSurface>
 #include <QSurface>
 #include <QOpenGLContext>
@@ -9,15 +11,22 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLTexture>
 #include <QOpenGLTextureBlitter>
+#include <QOpenGLFramebufferObject>
+#include <QThread>
+#include <QElapsedTimer>
 #include "render_tool/iessentialrenderingtools.h"
 #include "compositor.h"
 
-class EGLRender
+class EGLRender: public QObject
 {
+    Q_OBJECT
 public:
-    EGLRender(iEssentialRenderingTools* renderTool, QOpenGLContext *share);
+    EGLRender(iEssentialRenderingTools* renderTool, QOpenGLContext *share, bool isNeedtoImage = false, QObject *parent = nullptr);
     ~EGLRender();
     void render();
+
+signals:
+    void imageReady(const QImage &image);
 
 private:
     QOpenGLContext *m_context = nullptr;
@@ -25,12 +34,18 @@ private:
     QOpenGLShaderProgram *m_program = nullptr;
     QOpenGLBuffer *m_vbo = nullptr;
     QOpenGLVertexArrayObject *m_vao = nullptr;
+    QOpenGLFramebufferObject *m_fbo = nullptr;
+    bool m_isNeedtoImage = false;
 
 private:
     bool init(iEssentialRenderingTools *renderTool, QOpenGLContext *share);
     void setNormalMode(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao);
     void createVBO(QOpenGLBuffer*& vbo);
     void createVAO(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao);
+    void createFBO(iEssentialRenderingTools* renderTool);
+    void bindFBO();
+    void releaseFBO();
+    void notifyImageReady();
 };
 
 #endif // EGLRENDER_H

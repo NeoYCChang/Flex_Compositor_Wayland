@@ -53,6 +53,9 @@
 #include "compositor.h"
 #include "render_tool/displayview.h"
 #include "egl_function/eglhelper.h"
+#include "codec/gstencoder.h"
+#include <QTimer>
+#include <QThread>
 
 int main(int argc, char *argv[])
 {
@@ -63,7 +66,30 @@ int main(int argc, char *argv[])
 
     EGLHelper::TextureCropSize* textureCropSize = new  EGLHelper::TextureCropSize{QSize(800, 600), QRect(0,0,800,600)};
     DisplayView display("displayview",0, &compositor, textureCropSize);
+    display.resize(800, 600);
     display.show();
+    // DisplayView display2("displayview",0, &compositor, textureCropSize);
+    // display2.show();
+    // DisplayView display3("displayview",0, &compositor, textureCropSize);
+    // display3.show();
+    // DisplayView display4("displayview",0, &compositor, textureCropSize);
+    // display4.show();
+
+    QImage img = QImage("/home/yuchen/Downloads/long_journey/test.png").scaled(QSize(1920, 1080));
+    // qDebug()<<img.size();
+    GstEncoder encoder("gstencoder",1, &compositor, textureCropSize, 1920, 1080);
+    // QTimer *timer = new QTimer();
+    // QObject::connect(timer, &QTimer::timeout, [&encoder, img, &timer]() {
+    //     static int count = 0;
+    //     if (count < 500) {
+    //         encoder.enqueueImage(img);
+    //         count++;
+    //     }
+    //     else{
+    //         timer->stop();
+    //     }
+    // });
+    // timer->start(500);  // 每 500 毫秒發送一次
 
     return app.exec();
 }

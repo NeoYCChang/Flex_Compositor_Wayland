@@ -1,7 +1,7 @@
 #include "eglrender.h"
 
-EGLRender::EGLRender(iEssentialRenderingTools* renderTool, QOpenGLContext *share)
-    : m_renderTool(renderTool)
+EGLRender::EGLRender(iEssentialRenderingTools* renderTool, QOpenGLContext *share, bool isNeedtoImage, QObject *parent)
+    : QObject(parent), m_renderTool(renderTool), m_isNeedtoImage(isNeedtoImage)
 {
     init(m_renderTool, share);
 }
@@ -18,16 +18,18 @@ EGLRender::~EGLRender()
         m_vao->destroy();
     }
     delete m_vao;
+    delete m_fbo;
 }
 
 void EGLRender::render()
 {
+    //QElapsedTimer timer;
+    //timer.start();  // ⏱ 開始計時
     if (!m_context->makeCurrent(m_renderTool->getSurface()))
         return;
-    m_renderTool->getSource()->startRender();
 
     QOpenGLFunctions *f = m_context->functions();
-    f->glViewport(50, -50, m_renderTool->getSize().width(), m_renderTool->getSize().height());
+    f->glViewport(0, 0, m_renderTool->getSize().width(), m_renderTool->getSize().height());
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glClearColor(.4f, .7f, .1f, 0.5f);
 
@@ -35,6 +37,7 @@ void EGLRender::render()
     f->glEnable(GL_BLEND);
     f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    bindFBO();
     m_program->bind();
     m_vao->bind();
     const QList<View*> views = m_renderTool->getSource()->views();
@@ -56,7 +59,9 @@ void EGLRender::render()
     m_program->release();
     m_vao->release();
     m_context->swapBuffers(m_renderTool->getSurface());
-    m_renderTool->getSource()->endRender();
+    releaseFBO();
+    notifyImageReady();
+    //qDebug() << "enqueueImage elapsed:" << timer.nsecsElapsed() / 1e6 << "ms";  // 顯示毫秒（浮點數）
 }
 
 bool EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share)
@@ -98,6 +103,7 @@ bool EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share
         return false;
     m_program->release();
     setNormalMode(m_program, m_vbo, m_vao);
+    createFBO(renderTool);
 
     return true;
 }
@@ -165,5 +171,34 @@ void EGLRender::createVAO(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, Q
     program->release();
     vbo->release();
     vao->release();
+}
+
+void EGLRender::createFBO(iEssentialRenderingTools* renderTool)
+{
+    if(m_isNeedtoImage){
+        m_fbo = new QOpenGLFramebufferObject(renderTool->getSize(), QOpenGLFramebufferObject::Depth);
+    }
+}
+
+void EGLRender::bindFBO()
+{
+    if(m_fbo){
+        m_fbo->bind();
+    }
+}
+
+void EGLRender::releaseFBO()
+{
+    if(m_fbo){
+        m_fbo->release();
+    }
+}
+
+void EGLRender::notifyImageReady()
+{
+    //qDebug() << "[render] Current thread:" << QThread::currentThread();
+    if(m_fbo){
+        emit imageReady(m_fbo->toImage());
+    }
 }
 

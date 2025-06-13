@@ -7,6 +7,7 @@
 #include "iessentialrenderingtools.h"
 #include "egl_function/eglhelper.h"
 #include "egl_function/eglrender.h"
+#include "compositor.h"
 
 class DisplayView : public QWindow, public iEssentialRenderingTools
 {
@@ -28,6 +29,7 @@ private:
 
 
 private:
+    void initialize();
     void render();
 
 private slots:

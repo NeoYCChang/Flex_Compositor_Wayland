@@ -74,7 +74,7 @@ void Window::initializeGL()
 
 void Window::paintGL()
 {
-    m_compositor->startRender();
+    //m_compositor->startRender();
 
     QOpenGLFunctions *functions = context()->functions();
     functions->glClearColor(.4f, .7f, .1f, 0.5f);
@@ -110,7 +110,7 @@ void Window::paintGL()
         }
     }
     m_textureBlitter.release();
-    m_compositor->endRender();
+    //m_compositor->endRender();
 }
 
 void Window::mousePressEvent(QMouseEvent *event)

@@ -4,8 +4,12 @@ DisplayView::DisplayView(QString name, int id, Compositor* source, EGLHelper::Te
     :e_name(name), e_id(id), m_source(source), m_textureCropSize(textureCropSize)
 {
     setSurfaceType(QSurface::OpenGLSurface);
+    // m_thread = new QThread();
+    // this->moveToThread(m_thread);
+    // connect(m_thread, &QThread::started, this, &DisplayView::initialize);
+    // m_thread->start();
     if(m_source){
-        connect(m_source, &Compositor::requestUpdate, this, &DisplayView::onRequestUpdate);
+        connect(m_source, &Compositor::requestUpdate, this, &DisplayView::onRequestUpdate, Qt::DirectConnection);
     }
 }
 
@@ -34,6 +38,13 @@ Compositor *DisplayView::getSource()
     return m_source;
 }
 
+void DisplayView::initialize()
+{
+    if (!m_render) {
+        m_render = new EGLRender(this, EGLHelper::context());
+    }
+}
+
 void DisplayView::render()
 {
     if (!isExposed()) {
@@ -42,7 +53,6 @@ void DisplayView::render()
     if(m_render && m_source){
         m_render->render();
     }
-
 }
 
 void DisplayView::onRequestUpdate()
@@ -56,8 +66,6 @@ void DisplayView::exposeEvent(QExposeEvent *e)
 
     if (!isExposed())
         return;
-    if (!m_render && m_source) {
-        m_render = new EGLRender(this, EGLHelper::context());
-    }
+    initialize();
     render();
 }
