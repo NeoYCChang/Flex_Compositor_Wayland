@@ -32,9 +32,6 @@ private:
     void initialize();
     void render();
 
-private slots:
-    void onRequestUpdate();
-
 protected:
     void exposeEvent(QExposeEvent *e) override;
 };

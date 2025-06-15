@@ -59,6 +59,7 @@
 #include <QWaylandWlShell>
 #include <QWindow>
 #include <QMutex>
+#include <QThread>
 
 QT_BEGIN_NAMESPACE
 
@@ -110,6 +111,7 @@ public:
     void handleKeyPress(quint32 nativeScanCode);
     void handleKeyRelease(quint32 nativeScanCode);
 
+
 signals:
     void requestUpdate();
 
@@ -128,6 +130,7 @@ private:
     QWaylandWlShell *m_wlShell = nullptr;
     QList<View*> m_views;
     QPointer<View> m_mouseView;
+    int m_pendingRenderCount = 0;
 
 private:
     void startRender();

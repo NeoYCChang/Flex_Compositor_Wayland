@@ -36,17 +36,14 @@ private:
     int  e_id = 0;
     QOffscreenSurface *m_offscreenSurface = nullptr;
     GstEncoderThread* m_gstEncoderThread = nullptr;
-    QThread* m_thread = nullptr;
 
 private:
-    void deleteGstEncoderThread();
     void createGstEncoderThread();
     void createOffscreenSurface();
     void createRender();
     void render();
 
 private slots:
-    void onRequestUpdate();
     void initialize();
 };
 

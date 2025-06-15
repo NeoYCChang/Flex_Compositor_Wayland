@@ -3,21 +3,28 @@
 GstEncoderThread::GstEncoderThread(int w, int h, QObject *parent)
     : QObject{parent}, m_width(w), m_height(h)
 {
-    initialize();
+    m_thread = new QThread();
+    this->moveToThread(m_thread);
+    connect(m_thread, &QThread::started, this, &GstEncoderThread::initialize, Qt::DirectConnection);
+    m_thread->start();
 }
 
 GstEncoderThread::~GstEncoderThread()
 {
-    delete m_webSocketServer;
     gst_element_send_event(m_pipeline, gst_event_new_eos());
     gst_element_set_state(m_pipeline, GST_STATE_NULL);
     gst_object_unref(m_appsrc);
     gst_object_unref(m_appsink);
     gst_object_unref(m_pipeline);
+    if(m_thread){
+        m_thread->requestInterruption();
+        m_thread->quit();         // Asks event loop to exit (if you use one)
+        m_thread->wait();         // Blocks until thread exits
+    }
+    delete m_thread;
 }
 
 void GstEncoderThread::enqueueImage(const QImage &image) {
-    // qDebug() << "enqueueImage" << QThread::currentThread();
     //qDebug() << "enqueueImage";
     if (image.size() != QSize(m_width, m_height)) {
         qWarning() << "Image size mismatch";

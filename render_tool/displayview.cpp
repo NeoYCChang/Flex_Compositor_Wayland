@@ -8,9 +8,6 @@ DisplayView::DisplayView(QString name, int id, Compositor* source, EGLHelper::Te
     // this->moveToThread(m_thread);
     // connect(m_thread, &QThread::started, this, &DisplayView::initialize);
     // m_thread->start();
-    if(m_source){
-        connect(m_source, &Compositor::requestUpdate, this, &DisplayView::onRequestUpdate, Qt::DirectConnection);
-    }
 }
 
 DisplayView::~DisplayView()
@@ -42,6 +39,9 @@ void DisplayView::initialize()
 {
     if (!m_render) {
         m_render = new EGLRender(this, EGLHelper::context());
+        if(m_source){
+            connect(m_source, &Compositor::requestUpdate, m_render, &EGLRender::render_async, Qt::QueuedConnection);
+        }
     }
 }
 
@@ -51,14 +51,10 @@ void DisplayView::render()
         return;
     }
     if(m_render && m_source){
-        m_render->render();
+        m_render->render_async();
     }
 }
 
-void DisplayView::onRequestUpdate()
-{
-    render();
-}
 
 void DisplayView::exposeEvent(QExposeEvent *e)
 {

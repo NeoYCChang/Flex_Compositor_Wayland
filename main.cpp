@@ -68,6 +68,12 @@ int main(int argc, char *argv[])
     DisplayView display("displayview",0, &compositor, textureCropSize);
     display.resize(800, 600);
     display.show();
+    DisplayView display2("displayview",0, &compositor, textureCropSize);
+    display2.show();
+    DisplayView display3("displayview",0, &compositor, textureCropSize);
+    display3.show();
+    DisplayView display4("displayview",0, &compositor, textureCropSize);
+    display4.show();
     // DisplayView display2("displayview",0, &compositor, textureCropSize);
     // display2.show();
     // DisplayView display3("displayview",0, &compositor, textureCropSize);
@@ -75,7 +81,7 @@ int main(int argc, char *argv[])
     // DisplayView display4("displayview",0, &compositor, textureCropSize);
     // display4.show();
 
-    QImage img = QImage("/home/yuchen/Downloads/long_journey/test.png").scaled(QSize(1920, 1080));
+    //QImage img = QImage("/home/yuchen/Downloads/long_journey/test.png").scaled(QSize(1920, 1080));
     // qDebug()<<img.size();
     GstEncoder encoder("gstencoder",1, &compositor, textureCropSize, 1920, 1080);
     // QTimer *timer = new QTimer();

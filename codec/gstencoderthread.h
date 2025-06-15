@@ -8,6 +8,7 @@
 #include <QImage>
 #include <QDebug>
 #include <QSize>
+#include <QThread>
 #include "websocketserver.h"
 
 
@@ -31,6 +32,7 @@ private:
     int m_width = 960;
     int m_height = 540;
     WebSocketServer *m_webSocketServer = nullptr;
+    QThread* m_thread = nullptr;
 
 private:
     static GstFlowReturn onNewSample(GstAppSink *sink, gpointer user_data);

@@ -23,7 +23,9 @@ class EGLRender: public QObject
 public:
     EGLRender(iEssentialRenderingTools* renderTool, QOpenGLContext *share, bool isNeedtoImage = false, QObject *parent = nullptr);
     ~EGLRender();
-    void render();
+
+public slots:
+    void render_async();
 
 signals:
     void imageReady(const QImage &image);
@@ -36,15 +38,23 @@ private:
     QOpenGLVertexArrayObject *m_vao = nullptr;
     QOpenGLFramebufferObject *m_fbo = nullptr;
     bool m_isNeedtoImage = false;
+    bool m_isInit = false;
+    QThread *m_thread = nullptr;
+
+private slots:
+    void render();
+    void destroy_context();
 
 private:
-    bool init(iEssentialRenderingTools *renderTool, QOpenGLContext *share);
+    void init(iEssentialRenderingTools *renderTool, QOpenGLContext *share);
+    void render_init();
     void setNormalMode(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao);
     void createVBO(QOpenGLBuffer*& vbo);
     void createVAO(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao);
     void createFBO(iEssentialRenderingTools* renderTool);
     void bindFBO();
     void releaseFBO();
+    void swapToSurface();
     void notifyImageReady();
 };
 

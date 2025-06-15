@@ -8,17 +8,20 @@ EGLRender::EGLRender(iEssentialRenderingTools* renderTool, QOpenGLContext *share
 
 EGLRender::~EGLRender()
 {
-    delete m_context;
-    delete m_program;
-    if(m_vbo){
-        m_vbo->destroy();
+    QMetaObject::invokeMethod(this, "destroy_context", Qt::QueuedConnection);
+    if(m_thread){
+        m_thread->requestInterruption();
+        m_thread->quit();         // Asks event loop to exit (if you use one)
+        m_thread->wait();         // Blocks until thread exits
     }
-    delete m_vbo;
-    if(m_vao){
-        m_vao->destroy();
+    delete m_thread;
+}
+
+void EGLRender::render_async()
+{
+    if(m_isInit){
+        QMetaObject::invokeMethod(this, "render", Qt::QueuedConnection);
     }
-    delete m_vao;
-    delete m_fbo;
 }
 
 void EGLRender::render()
@@ -58,54 +61,103 @@ void EGLRender::render()
     }
     m_program->release();
     m_vao->release();
-    m_context->swapBuffers(m_renderTool->getSurface());
+    swapToSurface();
     releaseFBO();
     notifyImageReady();
     //qDebug() << "enqueueImage elapsed:" << timer.nsecsElapsed() / 1e6 << "ms";  // 顯示毫秒（浮點數）
 }
 
-bool EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share)
+void EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share)
 {
     m_context = new QOpenGLContext();
     m_context->setShareContext(share);
     m_context->setFormat(renderTool->getFormat());
     m_context->create();
-    if (!m_context->makeCurrent(renderTool->getSurface()))
-        return false;
+
+    m_thread = new QThread();
+    m_context->moveToThread(m_thread);
+    this->moveToThread(m_thread);
+
+    connect(m_thread, &QThread::started, this, [=]() {
+        if (!m_context->makeCurrent(renderTool->getSurface()))
+            return;
+        QOpenGLFunctions *f = m_context->functions();
+        f->glClearColor(0.0f, 0.1f, 0.25f, 1.0f);
+        f->glViewport(0, 0, renderTool->getSize().width(), renderTool->getSize().height());
+        static const char *vertexShaderSource =
+            "attribute vec4 a_position;\n"
+            "attribute vec2 a_texcoord;\n"
+            "varying vec2 v_texcoord;\n"
+            "void main()\n"
+            "{\n"
+            "    v_texcoord = a_texcoord;\n"
+            "    gl_Position = a_position;\n"
+            "}\n";
+
+        static const char *fragmentShaderSource =
+            "uniform sampler2D u_texture;\n"
+            "varying vec2 v_texcoord;\n"
+            "void main() {\n"
+            "   gl_FragColor = texture2D(u_texture, v_texcoord);\n"
+            "}\n";
+        m_program = new QOpenGLShaderProgram;
+        m_program->addCacheableShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
+        m_program->addCacheableShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource);
+        // Link shader pipeline
+        if (!m_program->link())
+            return;
+
+        // Bind shader pipeline for use
+        if (!m_program->bind())
+            return;
+        m_program->release();
+        setNormalMode(m_program, m_vbo, m_vao);
+        createFBO(renderTool);
+        m_isInit = true;
+        render_init();
+    });
+
+    m_thread->start();
+}
+
+void EGLRender::render_init()
+{
+    if (!m_context->makeCurrent(m_renderTool->getSurface()))
+        return;
+
     QOpenGLFunctions *f = m_context->functions();
-    f->glClearColor(0.0f, 0.1f, 0.25f, 1.0f);
-    f->glViewport(0, 0, renderTool->getSize().width(), renderTool->getSize().height());
-    static const char *vertexShaderSource =
-        "attribute vec4 a_position;\n"
-        "attribute vec2 a_texcoord;\n"
-        "varying vec2 v_texcoord;\n"
-        "void main()\n"
-        "{\n"
-        "    v_texcoord = a_texcoord;\n"
-        "    gl_Position = a_position;\n"
-        "}\n";
+    f->glViewport(0, 0, m_renderTool->getSize().width(), m_renderTool->getSize().height());
+    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    f->glClearColor(.4f, .7f, .1f, 0.5f);
 
-    static const char *fragmentShaderSource =
-        "uniform sampler2D u_texture;\n"
-        "varying vec2 v_texcoord;\n"
-        "void main() {\n"
-        "   gl_FragColor = texture2D(u_texture, v_texcoord);\n"
-        "}\n";
-    m_program = new QOpenGLShaderProgram;
-    m_program->addCacheableShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
-    m_program->addCacheableShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource);
-    // Link shader pipeline
-    if (!m_program->link())
-        return false;
+    GLenum currentTarget = GL_TEXTURE_2D;
+    f->glEnable(GL_BLEND);
+    f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Bind shader pipeline for use
-    if (!m_program->bind())
-        return false;
+    bindFBO();
+    m_program->bind();
+    m_vao->bind();
+    const QList<View*> views = m_renderTool->getSource()->views();
+    for (View *view : views) {
+        QOpenGLTexture * texture = view->getTexture();
+        if (!texture)
+            continue;
+        if (texture->target() != currentTarget) {
+            currentTarget = texture->target();
+        }
+        GLuint textureId = texture->textureId();
+        QWaylandSurface *surface = view->surface();
+        if (surface && surface->hasContent()) {
+            m_program->bind();
+            f->glBindTexture(GL_TEXTURE_2D, textureId);
+            f->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        }
+    }
     m_program->release();
-    setNormalMode(m_program, m_vbo, m_vao);
-    createFBO(renderTool);
-
-    return true;
+    m_vao->release();
+    swapToSurface();
+    releaseFBO();
+    notifyImageReady();
 }
 
 void EGLRender::setNormalMode(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao)
@@ -194,6 +246,13 @@ void EGLRender::releaseFBO()
     }
 }
 
+void EGLRender::swapToSurface()
+{
+    if(!m_fbo){
+        m_context->swapBuffers(m_renderTool->getSurface());
+    }
+}
+
 void EGLRender::notifyImageReady()
 {
     //qDebug() << "[render] Current thread:" << QThread::currentThread();
@@ -201,4 +260,21 @@ void EGLRender::notifyImageReady()
         emit imageReady(m_fbo->toImage());
     }
 }
+
+void EGLRender::destroy_context()
+{
+    delete m_context;
+    delete m_program;
+    if(m_vbo){
+        m_vbo->destroy();
+    }
+    delete m_vbo;
+    if(m_vao){
+        m_vao->destroy();
+    }
+    delete m_vao;
+    delete m_fbo;
+}
+
+
 

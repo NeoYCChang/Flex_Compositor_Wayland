@@ -14,11 +14,9 @@ GstEncoder::GstEncoder(QString name, int id, Compositor* source, EGLHelper::Text
 GstEncoder::~GstEncoder()
 {
     stop();
-    deleteGstEncoderThread();
     delete m_gstEncoderThread;
     delete m_offscreenSurface;
     delete m_render;
-    delete m_thread;
 }
 
 QSurfaceFormat GstEncoder::getFormat()
@@ -51,27 +49,12 @@ void GstEncoder::initialize()
     createGstEncoderThread();
     createOffscreenSurface();
     createRender();
-
-    if(m_source){
-        connect(m_source, &Compositor::requestUpdate, this, &GstEncoder::onRequestUpdate, Qt::DirectConnection);
-    }
 }
 
-void GstEncoder::deleteGstEncoderThread()
-{
-    if (m_thread) {
-        m_thread->quit();
-        m_thread->wait();
-        delete m_gstEncoderThread;
-    }
-}
 
 void GstEncoder::createGstEncoderThread()
 {
     m_gstEncoderThread = new GstEncoderThread(m_width, m_height);
-    m_thread = new QThread();
-    m_gstEncoderThread->moveToThread(m_thread);
-    m_thread->start();
 }
 
 void GstEncoder::createOffscreenSurface()
@@ -85,16 +68,15 @@ void GstEncoder::createRender()
 {
     m_render = new EGLRender(this, EGLHelper::context(), true);
     connect(m_render, &EGLRender::imageReady, m_gstEncoderThread, &GstEncoderThread::enqueueImage,  Qt::QueuedConnection);
+    if(m_source){
+        connect(m_source, &Compositor::requestUpdate, m_render, &EGLRender::render_async, Qt::QueuedConnection);
+    }
 }
 
 void GstEncoder::render()
 {
     if(m_render && m_source){
-        m_render->render();
+        m_render->render_async();
     }
 }
 
-void GstEncoder::onRequestUpdate()
-{
-    render();
-}

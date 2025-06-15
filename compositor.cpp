@@ -260,6 +260,7 @@ void Compositor::startRender()
     endRender();
 }
 
+
 void Compositor::endRender()
 {
     QWaylandOutput *out = defaultOutput();
