@@ -7,10 +7,12 @@ HEADERS += \
     codec/gstencoderthread.h \
     codec/websocketserver.h \
     compositor.h \
+    egl_function/eglcompositortexture.h \
     egl_function/eglhelper.h \
     egl_function/eglrender.h \
     render_tool/displayview.h \
     render_tool/iessentialrenderingtools.h \
+    render_tool/isource.h \
     window.h \
     window_controller/extend_display.h
 
@@ -19,6 +21,7 @@ SOURCES += main.cpp \
     codec/gstencoderthread.cpp \
     codec/websocketserver.cpp \
     compositor.cpp \
+    egl_function/eglcompositortexture.cpp \
     egl_function/eglhelper.cpp \
     egl_function/eglrender.cpp \
     render_tool/displayview.cpp \

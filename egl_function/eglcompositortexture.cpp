@@ -1,12 +1,12 @@
-#include "eglrender.h"
+#include "eglcompositortexture.h"
 
-EGLRender::EGLRender(iEssentialRenderingTools* renderTool, QOpenGLContext *share, bool isNeedtoImage, QObject *parent)
-    : QObject(parent), m_renderTool(renderTool), m_isNeedtoImage(isNeedtoImage)
+EGLCompositorTexture::EGLCompositorTexture(iSource* source, QOpenGLContext *share, QObject *parent)
+    : QObject(parent), m_source(source)
 {
-    init(m_renderTool, share);
+    init(m_source, share);
 }
 
-EGLRender::~EGLRender()
+EGLCompositorTexture::~EGLCompositorTexture()
 {
     QMetaObject::invokeMethod(this, "destroy_context", Qt::QueuedConnection);
     if(m_thread){
@@ -17,64 +17,65 @@ EGLRender::~EGLRender()
     delete m_thread;
 }
 
-void EGLRender::render_async()
+GLuint EGLCompositorTexture::getTextureID()
+{
+    m_fbo->texture();
+}
+
+void EGLCompositorTexture::render_async()
 {
     if(m_isInit){
         QMetaObject::invokeMethod(this, "render", Qt::QueuedConnection);
     }
 }
 
-void EGLRender::render()
+void EGLCompositorTexture::render()
 {
-    //QElapsedTimer timer;
-    //timer.start();  // ⏱ 開始計時
-    if (!m_context->makeCurrent(m_renderTool->getSurface()))
+    // QElapsedTimer timer;
+    // timer.start();  // ⏱ 開始計時
+    if (!m_context->makeCurrent(m_source->getSurface()))
         return;
-
     QOpenGLFunctions *f = m_context->functions();
-    f->glViewport(0, 0, m_renderTool->getSize().width(), m_renderTool->getSize().height());
+    f->glViewport(0, 0, m_source->getSize().width(), m_source->getSize().height());
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glClearColor(.4f, .7f, .1f, 0.5f);
 
     GLenum currentTarget = GL_TEXTURE_2D;
     f->glEnable(GL_BLEND);
     f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     bindFBO();
     m_program->bind();
     m_vao->bind();
-    GLuint textureid = m_renderTool->getSource()->getEGLTexture();
-
+    QList<GLuint> textureids = m_source->getTextures();
     m_program->bind();
-    glBindTexture(GL_TEXTURE_2D, textureid);
-    f->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
+    for (GLuint textureid : textureids) {
+        glBindTexture(GL_TEXTURE_2D, textureid);
+        f->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
     m_program->release();
     m_vao->release();
-    swapToSurface();
     releaseFBO();
     f->glFinish();
-    notifyImageReady();
-    //qDebug() << "enqueueImage elapsed:" << timer.nsecsElapsed() / 1e6 << "ms";  // 顯示毫秒（浮點數）
+    emit render_finish();
+    // qDebug() << "enqueueImage elapsed:" << timer.nsecsElapsed() / 1e6 << "ms";  // 顯示毫秒（浮點數）
 }
 
-void EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share)
+void EGLCompositorTexture::init(iSource* source, QOpenGLContext *share)
 {
     m_context = new QOpenGLContext();
     m_context->setShareContext(share);
-    m_context->setFormat(renderTool->getFormat());
+    m_context->setFormat(source->getFormat());
     m_context->create();
 
     m_thread = new QThread();
     m_context->moveToThread(m_thread);
     this->moveToThread(m_thread);
-
     connect(m_thread, &QThread::started, this, [=]() {
-        if (!m_context->makeCurrent(renderTool->getSurface()))
+        if (!m_context->makeCurrent(source->getSurface()))
             return;
         QOpenGLFunctions *f = m_context->functions();
         f->glClearColor(0.0f, 0.1f, 0.25f, 1.0f);
-        f->glViewport(0, 0, renderTool->getSize().width(), renderTool->getSize().height());
+        f->glViewport(0, 0, source->getSize().width(), source->getSize().height());
         static const char *vertexShaderSource =
             "attribute vec4 a_position;\n"
             "attribute vec2 a_texcoord;\n"
@@ -89,7 +90,7 @@ void EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share
             "uniform sampler2D u_texture;\n"
             "varying vec2 v_texcoord;\n"
             "void main() {\n"
-            "   gl_FragColor = texture2D(u_texture, vec2(v_texcoord.x, 1.0 - v_texcoord.y));\n"
+            "   gl_FragColor = texture2D(u_texture, v_texcoord);\n"
             "}\n";
         m_program = new QOpenGLShaderProgram;
         m_program->addCacheableShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
@@ -103,7 +104,7 @@ void EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share
             return;
         m_program->release();
         setNormalMode(m_program, m_vbo, m_vao);
-        createFBO(renderTool);
+        createFBO(source);
         m_isInit = true;
         render_init();
     });
@@ -111,13 +112,13 @@ void EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share
     m_thread->start();
 }
 
-void EGLRender::render_init()
+void EGLCompositorTexture::render_init()
 {
-    if (!m_context->makeCurrent(m_renderTool->getSurface()))
+    if (!m_context->makeCurrent(m_source->getSurface()))
         return;
 
     QOpenGLFunctions *f = m_context->functions();
-    f->glViewport(0, 0, m_renderTool->getSize().width(), m_renderTool->getSize().height());
+    f->glViewport(0, 0, m_source->getSize().width(), m_source->getSize().height());
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glClearColor(.4f, .7f, .1f, 0.5f);
 
@@ -128,26 +129,24 @@ void EGLRender::render_init()
     bindFBO();
     m_program->bind();
     m_vao->bind();
-    GLuint textureid = m_renderTool->getSource()->getEGLTexture();
-
+    QList<GLuint> textureids = m_source->getTextures();
     m_program->bind();
-    glBindTexture(GL_TEXTURE_2D, textureid);
-    f->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
+    for (GLuint textureid : textureids) {
+        glBindTexture(GL_TEXTURE_2D, textureid);
+        f->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
     m_program->release();
     m_vao->release();
-    swapToSurface();
     releaseFBO();
-    notifyImageReady();
 }
 
-void EGLRender::setNormalMode(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao)
+void EGLCompositorTexture::setNormalMode(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao)
 {
     createVBO(vbo);
     createVAO(program, vbo ,vao);
 }
 
-void EGLRender::createVBO(QOpenGLBuffer*& vbo)
+void EGLCompositorTexture::createVBO(QOpenGLBuffer*& vbo)
 {
     if(vbo)
     {
@@ -171,7 +170,7 @@ void EGLRender::createVBO(QOpenGLBuffer*& vbo)
     vbo->release();
 }
 
-void EGLRender::createVAO(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao)
+void EGLCompositorTexture::createVAO(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao)
 {
     if(!program || !vbo)
         return;
@@ -206,43 +205,26 @@ void EGLRender::createVAO(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, Q
     vao->release();
 }
 
-void EGLRender::createFBO(iEssentialRenderingTools* renderTool)
+void EGLCompositorTexture::createFBO(iSource* source)
 {
-    if(m_isNeedtoImage){
-        m_fbo = new QOpenGLFramebufferObject(renderTool->getSize(), QOpenGLFramebufferObject::Depth);
-    }
+    m_fbo = new QOpenGLFramebufferObject(source->getSize(), QOpenGLFramebufferObject::Depth);
 }
 
-void EGLRender::bindFBO()
+void EGLCompositorTexture::bindFBO()
 {
     if(m_fbo){
         m_fbo->bind();
     }
 }
 
-void EGLRender::releaseFBO()
+void EGLCompositorTexture::releaseFBO()
 {
     if(m_fbo){
         m_fbo->release();
     }
 }
 
-void EGLRender::swapToSurface()
-{
-    if(!m_fbo){
-        m_context->swapBuffers(m_renderTool->getSurface());
-    }
-}
-
-void EGLRender::notifyImageReady()
-{
-    //qDebug() << "[render] Current thread:" << QThread::currentThread();
-    if(m_fbo){
-        emit imageReady(m_fbo->toImage());
-    }
-}
-
-void EGLRender::destroy_context()
+void EGLCompositorTexture::destroy_context()
 {
     delete m_context;
     delete m_program;

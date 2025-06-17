@@ -2,7 +2,6 @@
 #define EGLHELPER_H
 
 #include <QOpenGLContext>
-#include <QOpenGLContext>
 #include <QSurfaceFormat>
 #include <QSize>
 #include <QRect>

@@ -31,6 +31,8 @@ private:
     GstElement *m_appsink = nullptr;
     int m_width = 960;
     int m_height = 540;
+    quint8 *m_frameData = nullptr;
+    gsize m_frameSize = 0;
     WebSocketServer *m_webSocketServer = nullptr;
     QThread* m_thread = nullptr;
 

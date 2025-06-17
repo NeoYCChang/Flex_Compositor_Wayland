@@ -22,6 +22,10 @@ GstEncoderThread::~GstEncoderThread()
         m_thread->wait();         // Blocks until thread exits
     }
     delete m_thread;
+    if (m_frameData) {
+        g_free(m_frameData);
+        m_frameData = nullptr;
+    }
 }
 
 void GstEncoderThread::enqueueImage(const QImage &image) {
@@ -30,18 +34,22 @@ void GstEncoderThread::enqueueImage(const QImage &image) {
         qWarning() << "Image size mismatch";
         return;
     }
-    QImage copiedImage = image.copy();
-    // GstBuffer *buffer = gst_buffer_new_allocate(nullptr, copiedImage.sizeInBytes(), nullptr);
-    // GstMapInfo map;
-    // gst_buffer_map(buffer, &map, GST_MAP_WRITE);
-    // memcpy(map.data, copiedImage.bits(), copiedImage.sizeInBytes());
-    // gst_buffer_unmap(buffer, &map);
-    GstBuffer* buffer = gst_buffer_new_wrapped((gpointer)copiedImage.bits(),copiedImage.sizeInBytes());
+    memcpy(m_frameData, image.bits(), m_frameSize);
+    GstBuffer *buffer = gst_buffer_new_wrapped_full(
+        GST_MEMORY_FLAG_READONLY,
+        m_frameData,
+        m_frameSize,
+        0,
+        m_frameSize,
+        nullptr, // no custom free function
+        nullptr
+        );
+    // GstBuffer* buffer = gst_buffer_new_wrapped((gpointer)copiedImage.bits(),copiedImage.sizeInBytes());
 
 
     GstFlowReturn ret;
     g_signal_emit_by_name(m_appsrc, "push-buffer", buffer, &ret);
-    //gst_buffer_unref(buffer);
+    gst_buffer_unref(buffer);
     if (ret != GST_FLOW_OK) {
         qWarning() << "Failed to push buffer";
     }
@@ -58,7 +66,7 @@ GstFlowReturn GstEncoderThread::onNewSample(GstAppSink *sink, gpointer user_data
     GstBuffer *buffer = gst_sample_get_buffer(sample);
     GstMapInfo map;
     if (gst_buffer_map(buffer, &map, GST_MAP_READ)) {
-        QByteArray encodedData((const char *)map.data, map.size);
+        QByteArray encodedData = QByteArray::fromRawData((const char *)map.data, map.size);
         // int offSet = 4;
 
         // int type = (static_cast<unsigned char>(encodedData[offSet]) & 0x7E) >> 1;
@@ -107,6 +115,8 @@ void GstEncoderThread::createPipeLine()
     if (ret == GST_STATE_CHANGE_FAILURE) {
         qWarning() << "Pipeline failed to start";
     }
+    m_frameSize = m_width * m_height * 4; // BGRA = 4 bytes per pixel
+    m_frameData = static_cast<quint8 *>(g_malloc(m_frameSize)); // GStreamer uses g_malloc-compatible memory
 }
 
 void GstEncoderThread::createWebSocketServer()

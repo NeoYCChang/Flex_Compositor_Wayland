@@ -7,21 +7,21 @@
 #include "iessentialrenderingtools.h"
 #include "egl_function/eglhelper.h"
 #include "egl_function/eglrender.h"
-#include "compositor.h"
+#include "isource.h"
 
 class DisplayView : public QWindow, public iEssentialRenderingTools
 {
     Q_OBJECT
 public:
-    DisplayView(QString name, int id, Compositor* source, EGLHelper::TextureCropSize* textureCropSize);
+    DisplayView(QString name, int id, iSource* source, EGLHelper::TextureCropSize* textureCropSize);
     ~DisplayView();
     QSurfaceFormat getFormat() override;
     QSurface* getSurface() override;
     QSize getSize() override;
-    Compositor* getSource() override;
+    iSource* getSource() override;
 
 private:
-    Compositor* m_source = nullptr;
+    iSource* m_source = nullptr;
     EGLRender* m_render = nullptr;
     EGLHelper::TextureCropSize* m_textureCropSize = nullptr;
     QString e_name = "";

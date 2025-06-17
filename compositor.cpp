@@ -58,6 +58,7 @@
 
 #include <QRandomGenerator>
 #include <QOpenGLFunctions>
+#include "egl_function/eglcompositortexture.h"
 
 QOpenGLTexture *View::getTexture() {
     if (advance())
@@ -84,7 +85,8 @@ void View::initPosition(const QSize &screenSize, const QSize &surfaceSize)
     setGlobalPosition(QPoint(rand.bounded(xrange), rand.bounded(yrange)));
 }
 
-Compositor::Compositor()
+Compositor::Compositor(QString name, int id,  int w, int h)
+    : e_name(name), e_id(id), m_width(w), m_height(h)
 {
     create();
     //connect(window, &Window::glReady, this, [this] { create(); });
@@ -100,18 +102,20 @@ Compositor::~Compositor()
         delete view;
     }
     m_views.clear();
+    delete m_eglCompositorTexture;
+    delete m_offscreenSurface;
 }
 
 void Compositor::create()
 {
     m_window = new QWindow();
-    m_window->resize(800,600);
+    m_window->resize(m_width, m_height);
     QWaylandOutput *output = new QWaylandOutput(this, m_window);
     QWaylandOutputMode mode(m_window->size(), 60000);
     output->addMode(mode, true);
     output->setCurrentMode(mode);
     QWaylandCompositor::create();
-
+    createOffscreenSurface();
 
     m_iviApplication = new QWaylandIviApplication(this);
     connect(m_iviApplication, &QWaylandIviApplication::iviSurfaceCreated, this, &Compositor::onIviSurfaceCreated);
@@ -196,6 +200,39 @@ void Compositor::handleKeyRelease(quint32 nativeScanCode)
     defaultSeat()->sendKeyReleaseEvent(nativeScanCode);
 }
 
+QSurfaceFormat Compositor::getFormat()
+{
+    return m_offscreenSurface->requestedFormat();
+}
+
+QSurface *Compositor::getSurface()
+{
+    return m_offscreenSurface;
+}
+
+QSize Compositor::getSize()
+{
+    return QSize(m_width, m_height);
+}
+
+QList<GLuint> Compositor::getTextures()
+{
+    QList<GLuint> list;
+    for (auto it = m_views.crbegin(); it != m_views.crend(); ++it) {
+        View *view = *it;
+        QOpenGLTexture * texture = view->getTexture();
+        if(texture){
+            list << texture->textureId();
+        }
+    }
+    return list;
+}
+
+GLuint Compositor::getEGLTexture()
+{
+    return m_eglCompositorTexture->getTextureID();
+}
+
 
 void Compositor::onIviSurfaceCreated(QWaylandIviSurface *iviSurface)
 {
@@ -255,8 +292,14 @@ void Compositor::startRender()
     QWaylandOutput *out = defaultOutput();
     if (out)
         out->frameStarted();
-    emit requestUpdate();
+    if(m_eglCompositorTexture)
+        m_eglCompositorTexture->render_async();
+}
 
+
+void Compositor::onRender_finish()
+{
+    emit requestUpdate();
     endRender();
 }
 
@@ -266,4 +309,13 @@ void Compositor::endRender()
     QWaylandOutput *out = defaultOutput();
     if (out)
         out->sendFrameCallbacks();
+}
+
+void Compositor::createOffscreenSurface()
+{
+    m_offscreenSurface = new QOffscreenSurface;
+    m_offscreenSurface->setFormat(EGLHelper::context()->format());
+    m_offscreenSurface->create();
+    m_eglCompositorTexture = new EGLCompositorTexture(this, EGLHelper::context());
+    connect(m_eglCompositorTexture, &EGLCompositorTexture::render_finish, this, &Compositor::onRender_finish);
 }

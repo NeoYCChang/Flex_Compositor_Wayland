@@ -1,6 +1,6 @@
 #include "displayview.h"
 
-DisplayView::DisplayView(QString name, int id, Compositor* source, EGLHelper::TextureCropSize* textureCropSize)
+DisplayView::DisplayView(QString name, int id, iSource* source, EGLHelper::TextureCropSize* textureCropSize)
     :e_name(name), e_id(id), m_source(source), m_textureCropSize(textureCropSize)
 {
     setSurfaceType(QSurface::OpenGLSurface);
@@ -30,7 +30,7 @@ QSize DisplayView::getSize()
     return QSize(this->width(), this->height());
 }
 
-Compositor *DisplayView::getSource()
+iSource *DisplayView::getSource()
 {
     return m_source;
 }
@@ -40,7 +40,11 @@ void DisplayView::initialize()
     if (!m_render) {
         m_render = new EGLRender(this, EGLHelper::context());
         if(m_source){
-            connect(m_source, &Compositor::requestUpdate, m_render, &EGLRender::render_async, Qt::QueuedConnection);
+            if (Compositor *compositor = dynamic_cast<Compositor *>(m_source)) {
+                connect(compositor, &Compositor::requestUpdate, m_render, &EGLRender::render_async, Qt::QueuedConnection);
+            } else {
+            }
+
         }
     }
 }

@@ -60,12 +60,15 @@
 #include <QWindow>
 #include <QMutex>
 #include <QThread>
+#include <QOffscreenSurface>
+#include "render_tool/isource.h"
 
 QT_BEGIN_NAMESPACE
 
 class QOpenGLTexture;
 class QWaylandIviApplication;
 class QWaylandIviSurface;
+class EGLCompositorTexture;
 
 class View : public QWaylandView
 {
@@ -91,11 +94,11 @@ private:
     QString m_Id;
 };
 
-class Compositor : public QWaylandCompositor
+class Compositor : public QWaylandCompositor, public iSource
 {
     Q_OBJECT
 public:
-    Compositor();
+    Compositor(QString name, int id,  int w, int h);
     ~Compositor() override;
     void create() override;
 
@@ -111,6 +114,14 @@ public:
     void handleKeyPress(quint32 nativeScanCode);
     void handleKeyRelease(quint32 nativeScanCode);
 
+//iEssentialRenderingTools
+public:
+    QSurfaceFormat getFormat() override;
+    QSurface* getSurface() override;
+    QSize getSize() override;
+    QList<GLuint> getTextures() override;
+    GLuint getEGLTexture() override;
+
 
 signals:
     void requestUpdate();
@@ -121,8 +132,8 @@ private slots:
     void onWlShellSurfaceCreated(QWaylandWlShellSurface *shellSurface);
     void onSurfaceDestroyed();
     void triggerRender();
-
     void viewSurfaceDestroyed();
+    void onRender_finish();
 private:
     QWindow *m_window = nullptr;
     QWaylandIviApplication *m_iviApplication = nullptr;
@@ -130,11 +141,20 @@ private:
     QWaylandWlShell *m_wlShell = nullptr;
     QList<View*> m_views;
     QPointer<View> m_mouseView;
+    EGLCompositorTexture* m_eglCompositorTexture = nullptr;
+    QOffscreenSurface *m_offscreenSurface = nullptr;
     int m_pendingRenderCount = 0;
+
+private:
+    int m_width = 960;
+    int m_height = 540;
+    QString e_name = "";
+    int  e_id = 0;
 
 private:
     void startRender();
     void endRender();
+    void createOffscreenSurface();
 };
 
 QT_END_NAMESPACE

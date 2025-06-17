@@ -7,20 +7,20 @@
 #include <QDebug>
 #include <QOffscreenSurface>
 #include <QThread>
-#include "compositor.h"
 #include "gstencoderthread.h"
 #include "egl_function/eglhelper.h"
 #include "egl_function/eglrender.h"
+#include "render_tool/isource.h"
 
 class GstEncoder : public QObject, public iEssentialRenderingTools {
     Q_OBJECT
 public:
-    explicit GstEncoder(QString name, int id, Compositor* source, EGLHelper::TextureCropSize* textureCropSize, int w, int h, QObject *parent = nullptr);
+    explicit GstEncoder(QString name, int id, iSource* source, EGLHelper::TextureCropSize* textureCropSize, int w, int h, QObject *parent = nullptr);
     ~GstEncoder();
     QSurfaceFormat getFormat() override;
     QSurface* getSurface() override;
     QSize getSize() override;
-    Compositor* getSource() override;
+    iSource* getSource() override;
 
 public slots:
     void stop();
@@ -29,7 +29,7 @@ private:
     int m_width = 960;
     int m_height = 540;
     QMutex mutex;
-    Compositor* m_source = nullptr;
+    iSource* m_source = nullptr;
     EGLRender* m_render = nullptr;
     EGLHelper::TextureCropSize* m_textureCropSize = nullptr;
     QString e_name = "";

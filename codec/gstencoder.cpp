@@ -1,6 +1,6 @@
 #include "gstencoder.h"
 
-GstEncoder::GstEncoder(QString name, int id, Compositor* source, EGLHelper::TextureCropSize* textureCropSize, int w, int h, QObject *parent)
+GstEncoder::GstEncoder(QString name, int id, iSource* source, EGLHelper::TextureCropSize* textureCropSize, int w, int h, QObject *parent)
 : QObject(parent), m_width(w), m_height(h), m_source(source), m_textureCropSize(textureCropSize), e_name(name), e_id(id)
 {
 
@@ -34,7 +34,7 @@ QSize GstEncoder::getSize()
     return QSize(m_width, m_height);
 }
 
-Compositor *GstEncoder::getSource()
+iSource *GstEncoder::getSource()
 {
     return m_source;
 }
@@ -69,7 +69,10 @@ void GstEncoder::createRender()
     m_render = new EGLRender(this, EGLHelper::context(), true);
     connect(m_render, &EGLRender::imageReady, m_gstEncoderThread, &GstEncoderThread::enqueueImage,  Qt::QueuedConnection);
     if(m_source){
-        connect(m_source, &Compositor::requestUpdate, m_render, &EGLRender::render_async, Qt::QueuedConnection);
+        if (Compositor *compositor = dynamic_cast<Compositor *>(m_source)) {
+            connect(compositor, &Compositor::requestUpdate, m_render, &EGLRender::render_async, Qt::QueuedConnection);
+        } else {
+        }
     }
 }
 

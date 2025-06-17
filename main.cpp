@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-    Compositor compositor;
+    Compositor compositor("compositor", 17, 1920, 1080);
     //window.show();
 
     EGLHelper::TextureCropSize* textureCropSize = new  EGLHelper::TextureCropSize{QSize(800, 600), QRect(0,0,800,600)};
@@ -74,12 +74,6 @@ int main(int argc, char *argv[])
     display3.show();
     DisplayView display4("displayview",0, &compositor, textureCropSize);
     display4.show();
-    // DisplayView display2("displayview",0, &compositor, textureCropSize);
-    // display2.show();
-    // DisplayView display3("displayview",0, &compositor, textureCropSize);
-    // display3.show();
-    // DisplayView display4("displayview",0, &compositor, textureCropSize);
-    // display4.show();
 
     //QImage img = QImage("/home/yuchen/Downloads/long_journey/test.png").scaled(QSize(1920, 1080));
     // qDebug()<<img.size();

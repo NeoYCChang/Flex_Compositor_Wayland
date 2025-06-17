@@ -3,7 +3,9 @@
 #include <QSurface>
 #include <QSurfaceFormat>
 #include <QSize>
-#include "compositor.h"
+#include <QList>
+#include <QOpenGLContext>
+#include "isource.h"
 
 class iEssentialRenderingTools
 {
@@ -13,7 +15,7 @@ public:
     virtual QSurfaceFormat getFormat() = 0;
     virtual QSurface* getSurface() = 0;
     virtual QSize getSize() = 0;
-    virtual Compositor* getSource() = 0;
+    virtual iSource* getSource() = 0;
 };
 
 #endif // IESSENTIALRENDERINGTOOLS_H
