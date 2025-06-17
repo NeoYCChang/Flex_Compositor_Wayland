@@ -1,10 +1,11 @@
 #include "gstencoder.h"
 
-GstEncoder::GstEncoder(QString name, int id, iSource* source, EGLHelper::TextureCropSize* textureCropSize, int w, int h, QObject *parent)
-: QObject(parent), m_width(w), m_height(h), m_source(source), m_textureCropSize(textureCropSize), e_name(name), e_id(id)
+GstEncoder::GstEncoder(QString name, int id, iSource* source, QRect cropTextureSize, int w, int h, QObject *parent)
+: QObject(parent), m_width(w), m_height(h), m_source(source), e_name(name), e_id(id)
 {
 
     //connect(m_thread, &QThread::started, this, &GstEncoder::initialize);
+    m_textureCropSize = new  EGLHelper::TextureCropSize{m_source->getSize(), cropTextureSize};
     initialize();
 //     m_thread = new QThread();
 //     this->moveToThread(m_thread);
@@ -34,6 +35,11 @@ QSize GstEncoder::getSize()
     return QSize(m_width, m_height);
 }
 
+EGLHelper::TextureCropSize *GstEncoder::getTextureCropSize()
+{
+    return m_textureCropSize;
+}
+
 iSource *GstEncoder::getSource()
 {
     return m_source;
@@ -41,7 +47,6 @@ iSource *GstEncoder::getSource()
 
 void GstEncoder::stop() {
     QMutexLocker locker(&mutex);
-    // 可擴充為處理停止狀態
 }
 
 void GstEncoder::initialize()

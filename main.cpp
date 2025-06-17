@@ -65,19 +65,22 @@ int main(int argc, char *argv[])
     //window.show();
 
     EGLHelper::TextureCropSize* textureCropSize = new  EGLHelper::TextureCropSize{QSize(800, 600), QRect(0,0,800,600)};
-    DisplayView display("displayview",0, &compositor, textureCropSize);
-    display.resize(800, 600);
+    DisplayView display("displayview",0, &compositor, QRect(0,540,960,540));
+    display.setPosition(0,540);
     display.show();
-    DisplayView display2("displayview",0, &compositor, textureCropSize);
+    DisplayView display2("displayview",0, &compositor, QRect(0,0,960,540));
+    display2.setPosition(0,0);
     display2.show();
-    DisplayView display3("displayview",0, &compositor, textureCropSize);
+    DisplayView display3("displayview",0, &compositor, QRect(960,0,960,540));
+    display3.setPosition(960,0);
     display3.show();
-    DisplayView display4("displayview",0, &compositor, textureCropSize);
+    DisplayView display4("displayview",0, &compositor, QRect(960,540,960,540));
+    display4.setPosition(960,540);
     display4.show();
 
     //QImage img = QImage("/home/yuchen/Downloads/long_journey/test.png").scaled(QSize(1920, 1080));
     // qDebug()<<img.size();
-    GstEncoder encoder("gstencoder",1, &compositor, textureCropSize, 1920, 1080);
+    GstEncoder encoder("gstencoder",1, &compositor, QRect(0,0,1920,1080), 1920, 1080);
     // QTimer *timer = new QTimer();
     // QObject::connect(timer, &QTimer::timeout, [&encoder, img, &timer]() {
     //     static int count = 0;

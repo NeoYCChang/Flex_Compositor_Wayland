@@ -102,7 +102,7 @@ void EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share
         if (!m_program->bind())
             return;
         m_program->release();
-        setNormalMode(m_program, m_vbo, m_vao);
+        setNormalMode(renderTool, m_program, m_vbo, m_vao);
         createFBO(renderTool);
         m_isInit = true;
         render_init();
@@ -141,13 +141,13 @@ void EGLRender::render_init()
     notifyImageReady();
 }
 
-void EGLRender::setNormalMode(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao)
+void EGLRender::setNormalMode(iEssentialRenderingTools* renderTool, QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao)
 {
-    createVBO(vbo);
+    createVBO(renderTool, vbo);
     createVAO(program, vbo ,vao);
 }
 
-void EGLRender::createVBO(QOpenGLBuffer*& vbo)
+void EGLRender::createVBO(iEssentialRenderingTools* renderTool, QOpenGLBuffer*& vbo)
 {
     if(vbo)
     {
@@ -159,8 +159,17 @@ void EGLRender::createVBO(QOpenGLBuffer*& vbo)
     vertices[0] = QVector3D(-1.0f, 1.0f, 0.0f);vertices[1] = QVector3D(-1.0f, -1.0f, 0.0f);
     vertices[2] = QVector3D(1.0f, 1.0f, 0.0f);vertices[3] = QVector3D(1.0f, -1.0f, 0.0f);
 
-    texcoord[0] = QVector2D(0.0f, 0.0f);texcoord[1] = QVector2D(0.0f, 1.0f);
-    texcoord[2] = QVector2D(1.0f, 0.0f);texcoord[3] = QVector2D(1.0f, 1.0f);
+    EGLHelper::TextureCropSize* textureCropSize = renderTool->getTextureCropSize();
+
+    float left = (float)textureCropSize->crop.x() / textureCropSize->textureSize.width();
+    float top = (float)textureCropSize->crop.y() / textureCropSize->textureSize.height();
+    float right = (float)(textureCropSize->crop.x() + textureCropSize->crop.width()) / textureCropSize->textureSize.width();
+    float bottom = (float)(textureCropSize->crop.y() + textureCropSize->crop.height()) / textureCropSize->textureSize.height();
+
+    qDebug()<<left<<top<<right<<bottom;
+
+    texcoord[0] = QVector2D(left, top);texcoord[1] = QVector2D(left, bottom);
+    texcoord[2] = QVector2D(right, top);texcoord[3] = QVector2D(right, bottom);
 
     vbo = new QOpenGLBuffer;
     vbo->create();

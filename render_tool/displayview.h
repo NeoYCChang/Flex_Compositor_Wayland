@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QWindow>
 #include <QSize>
+#include <QRect>
 #include "iessentialrenderingtools.h"
 #include "egl_function/eglhelper.h"
 #include "egl_function/eglrender.h"
@@ -13,11 +14,12 @@ class DisplayView : public QWindow, public iEssentialRenderingTools
 {
     Q_OBJECT
 public:
-    DisplayView(QString name, int id, iSource* source, EGLHelper::TextureCropSize* textureCropSize);
+    DisplayView(QString name, int id, iSource* source, QRect cropTextureSize);
     ~DisplayView();
     QSurfaceFormat getFormat() override;
     QSurface* getSurface() override;
     QSize getSize() override;
+    EGLHelper::TextureCropSize* getTextureCropSize() override;
     iSource* getSource() override;
 
 private:

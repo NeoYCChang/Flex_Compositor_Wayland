@@ -12,8 +12,8 @@ class EGLHelper
 public:
     EGLHelper();
     struct TextureCropSize {
-        QSize textureSize;
-        QRect crop;
+        QSize textureSize; // orginal texture size
+        QRect crop; // Crop part of the texture
     };
     static QOpenGLContext *context();
 

@@ -15,6 +15,7 @@
 #include <QThread>
 #include <QElapsedTimer>
 #include "render_tool/iessentialrenderingtools.h"
+#include "eglhelper.h"
 #include "compositor.h"
 
 class EGLRender: public QObject
@@ -48,8 +49,8 @@ private slots:
 private:
     void init(iEssentialRenderingTools *renderTool, QOpenGLContext *share);
     void render_init();
-    void setNormalMode(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao);
-    void createVBO(QOpenGLBuffer*& vbo);
+    void setNormalMode(iEssentialRenderingTools* renderTool, QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao);
+    void createVBO(iEssentialRenderingTools* renderTool, QOpenGLBuffer*& vbo);
     void createVAO(QOpenGLShaderProgram*& program, QOpenGLBuffer*& vbo, QOpenGLVertexArrayObject*& vao);
     void createFBO(iEssentialRenderingTools* renderTool);
     void bindFBO();

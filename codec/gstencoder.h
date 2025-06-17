@@ -15,11 +15,12 @@
 class GstEncoder : public QObject, public iEssentialRenderingTools {
     Q_OBJECT
 public:
-    explicit GstEncoder(QString name, int id, iSource* source, EGLHelper::TextureCropSize* textureCropSize, int w, int h, QObject *parent = nullptr);
+    explicit GstEncoder(QString name, int id, iSource* source, QRect cropTextureSize, int w, int h, QObject *parent = nullptr);
     ~GstEncoder();
     QSurfaceFormat getFormat() override;
     QSurface* getSurface() override;
     QSize getSize() override;
+    EGLHelper::TextureCropSize* getTextureCropSize() override;
     iSource* getSource() override;
 
 public slots:

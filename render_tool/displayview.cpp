@@ -1,9 +1,10 @@
 #include "displayview.h"
 
-DisplayView::DisplayView(QString name, int id, iSource* source, EGLHelper::TextureCropSize* textureCropSize)
-    :e_name(name), e_id(id), m_source(source), m_textureCropSize(textureCropSize)
+DisplayView::DisplayView(QString name, int id, iSource* source, QRect cropTextureSize)
+    :e_name(name), e_id(id), m_source(source)
 {
     setSurfaceType(QSurface::OpenGLSurface);
+    m_textureCropSize = new  EGLHelper::TextureCropSize{m_source->getSize(), cropTextureSize};
     // m_thread = new QThread();
     // this->moveToThread(m_thread);
     // connect(m_thread, &QThread::started, this, &DisplayView::initialize);
@@ -28,6 +29,11 @@ QSurface *DisplayView::getSurface()
 QSize DisplayView::getSize()
 {
     return QSize(this->width(), this->height());
+}
+
+EGLHelper::TextureCropSize *DisplayView::getTextureCropSize()
+{
+    return m_textureCropSize;
 }
 
 iSource *DisplayView::getSource()
