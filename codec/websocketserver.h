@@ -22,7 +22,7 @@ private slots:
     void onSocketDisconnected();
 
 private:
-    QWebSocketServer *m_server;
+    QWebSocketServer *m_server = nullptr;
     QList<QWebSocket*> m_clients;
 };
 

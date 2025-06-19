@@ -13,10 +13,8 @@
 #include <QOpenGLTextureBlitter>
 #include <QOpenGLFramebufferObject>
 #include <QThread>
-#include <QElapsedTimer>
 #include "render_tool/iessentialrenderingtools.h"
 #include "eglhelper.h"
-#include "compositor.h"
 
 class EGLRender: public QObject
 {

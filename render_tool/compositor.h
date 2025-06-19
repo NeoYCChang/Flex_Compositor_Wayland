@@ -114,7 +114,7 @@ public:
     void handleKeyPress(quint32 nativeScanCode);
     void handleKeyRelease(quint32 nativeScanCode);
 
-//iEssentialRenderingTools
+//iSource
 public:
     QSurfaceFormat getFormat() override;
     QSurface* getSurface() override;

@@ -1,7 +1,7 @@
 #include "gstencoderthread.h"
 
-GstEncoderThread::GstEncoderThread(int w, int h, QObject *parent)
-    : QObject{parent}, m_width(w), m_height(h)
+GstEncoderThread::GstEncoderThread(int w, int h, quint16 port, QObject *parent)
+    : QObject{parent}, m_width(w), m_height(h), m_port(port)
 {
     m_thread = new QThread();
     this->moveToThread(m_thread);
@@ -26,6 +26,7 @@ GstEncoderThread::~GstEncoderThread()
         g_free(m_frameData);
         m_frameData = nullptr;
     }
+    delete m_webSocketServer;
 }
 
 void GstEncoderThread::enqueueImage(const QImage &image) {
@@ -121,7 +122,7 @@ void GstEncoderThread::createPipeLine()
 
 void GstEncoderThread::createWebSocketServer()
 {
-    m_webSocketServer = new WebSocketServer(50000, this);
+    m_webSocketServer = new WebSocketServer(m_port, this);
     connect(this, &GstEncoderThread::encodedFrame, m_webSocketServer, &WebSocketServer::sendMessageToAll,  Qt::QueuedConnection);
 }
 

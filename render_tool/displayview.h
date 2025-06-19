@@ -8,7 +8,9 @@
 #include "iessentialrenderingtools.h"
 #include "egl_function/eglhelper.h"
 #include "egl_function/eglrender.h"
+#include "compositor.h"
 #include "isource.h"
+#include "codec/gstdecoder.h"
 
 class DisplayView : public QWindow, public iEssentialRenderingTools
 {

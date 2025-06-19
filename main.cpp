@@ -50,10 +50,11 @@
 
 #include <QGuiApplication>
 #include "window.h"
-#include "compositor.h"
+#include "render_tool/compositor.h"
 #include "render_tool/displayview.h"
 #include "egl_function/eglhelper.h"
 #include "codec/gstencoder.h"
+#include "codec/gstdecoder.h"
 #include <QTimer>
 #include <QThread>
 
@@ -65,22 +66,28 @@ int main(int argc, char *argv[])
     //window.show();
 
     EGLHelper::TextureCropSize* textureCropSize = new  EGLHelper::TextureCropSize{QSize(800, 600), QRect(0,0,800,600)};
-    DisplayView display("displayview",0, &compositor, QRect(0,540,960,540));
-    display.setPosition(0,540);
+    DisplayView display("displayview",0, &compositor, QRect(0,0,1920,1080));
+     display.setPosition(0,540);
+    //display.resize(2500, 500);
     display.show();
-    DisplayView display2("displayview",0, &compositor, QRect(0,0,960,540));
-    display2.setPosition(0,0);
-    display2.show();
-    DisplayView display3("displayview",0, &compositor, QRect(960,0,960,540));
-    display3.setPosition(960,0);
-    display3.show();
-    DisplayView display4("displayview",0, &compositor, QRect(960,540,960,540));
-    display4.setPosition(960,540);
-    display4.show();
+//    DisplayView display2("displayview",0, &compositor, QRect(0,0,960,540));
+//    display2.setPosition(0,0);
+//    display2.show();
+//    DisplayView display3("displayview",0, &compositor, QRect(960,0,960,540));
+//    display3.setPosition(960,0);
+//    display3.show();
+//    DisplayView display4("displayview",0, &compositor, QRect(960,540,960,540));
+//    display4.setPosition(960,540);
+//    display4.show();
 
     //QImage img = QImage("/home/yuchen/Downloads/long_journey/test.png").scaled(QSize(1920, 1080));
     // qDebug()<<img.size();
-    GstEncoder encoder("gstencoder",1, &compositor, QRect(0,0,1920,1080), 1920, 1080);
+    GstEncoder encoder("gstencoder",1, &compositor, QRect(0,0,1920,1080), 1920, 1080, 50000);
+    GstDecoder decoder("gst", 0, 1920, 1080, "127.0.0.1", 50000);
+
+    DisplayView display2("displayview",0, &decoder, QRect(0,0,1920,1080));
+    display2.setPosition(0,0);
+    display2.show();
     // QTimer *timer = new QTimer();
     // QObject::connect(timer, &QTimer::timeout, [&encoder, img, &timer]() {
     //     static int count = 0;

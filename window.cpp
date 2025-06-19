@@ -49,7 +49,7 @@
 ****************************************************************************/
 
 #include "window.h"
-#include "compositor.h"
+#include "render_tool/compositor.h"
 
 #include <QPainter>
 #include <QMatrix4x4>

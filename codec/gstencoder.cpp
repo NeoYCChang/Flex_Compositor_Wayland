@@ -1,7 +1,7 @@
 #include "gstencoder.h"
 
-GstEncoder::GstEncoder(QString name, int id, iSource* source, QRect cropTextureSize, int w, int h, QObject *parent)
-: QObject(parent), m_width(w), m_height(h), m_source(source), e_name(name), e_id(id)
+GstEncoder::GstEncoder(QString name, int id, iSource* source, QRect cropTextureSize, int w, int h, quint16 port, QObject *parent)
+    : QObject(parent), m_width(w), m_height(h), m_port(port), m_source(source), e_name(name), e_id(id)
 {
 
     //connect(m_thread, &QThread::started, this, &GstEncoder::initialize);
@@ -59,7 +59,7 @@ void GstEncoder::initialize()
 
 void GstEncoder::createGstEncoderThread()
 {
-    m_gstEncoderThread = new GstEncoderThread(m_width, m_height);
+    m_gstEncoderThread = new GstEncoderThread(m_width, m_height, m_port);
 }
 
 void GstEncoder::createOffscreenSurface()

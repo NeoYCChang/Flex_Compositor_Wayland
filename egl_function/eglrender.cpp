@@ -26,8 +26,6 @@ void EGLRender::render_async()
 
 void EGLRender::render()
 {
-    //QElapsedTimer timer;
-    //timer.start();  // ⏱ 開始計時
     if (!m_context->makeCurrent(m_renderTool->getSurface()))
         return;
 
@@ -55,7 +53,6 @@ void EGLRender::render()
     releaseFBO();
     f->glFinish();
     notifyImageReady();
-    //qDebug() << "enqueueImage elapsed:" << timer.nsecsElapsed() / 1e6 << "ms";  // 顯示毫秒（浮點數）
 }
 
 void EGLRender::init(iEssentialRenderingTools* renderTool, QOpenGLContext *share)
@@ -165,8 +162,6 @@ void EGLRender::createVBO(iEssentialRenderingTools* renderTool, QOpenGLBuffer*& 
     float top = (float)textureCropSize->crop.y() / textureCropSize->textureSize.height();
     float right = (float)(textureCropSize->crop.x() + textureCropSize->crop.width()) / textureCropSize->textureSize.width();
     float bottom = (float)(textureCropSize->crop.y() + textureCropSize->crop.height()) / textureCropSize->textureSize.height();
-
-    qDebug()<<left<<top<<right<<bottom;
 
     texcoord[0] = QVector2D(left, top);texcoord[1] = QVector2D(left, bottom);
     texcoord[2] = QVector2D(right, top);texcoord[3] = QVector2D(right, bottom);

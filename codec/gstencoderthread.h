@@ -16,7 +16,7 @@ class GstEncoderThread : public QObject
 {
     Q_OBJECT
 public:
-    explicit GstEncoderThread(int w, int h, QObject *parent = nullptr);
+    explicit GstEncoderThread(int w, int h, quint16 port, QObject *parent = nullptr);
     ~GstEncoderThread();
 
 public slots:
@@ -31,6 +31,7 @@ private:
     GstElement *m_appsink = nullptr;
     int m_width = 960;
     int m_height = 540;
+    quint16 m_port = 50000;
     quint8 *m_frameData = nullptr;
     gsize m_frameSize = 0;
     WebSocketServer *m_webSocketServer = nullptr;

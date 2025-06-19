@@ -48,7 +48,8 @@ void DisplayView::initialize()
         if(m_source){
             if (Compositor *compositor = dynamic_cast<Compositor *>(m_source)) {
                 connect(compositor, &Compositor::requestUpdate, m_render, &EGLRender::render_async, Qt::QueuedConnection);
-            } else {
+            } else if(GstDecoder *gstDecoder = dynamic_cast<GstDecoder *>(m_source)){
+                connect(gstDecoder, &GstDecoder::requestUpdate, m_render, &EGLRender::render_async, Qt::QueuedConnection);
             }
 
         }

@@ -19,7 +19,12 @@ EGLCompositorTexture::~EGLCompositorTexture()
 
 GLuint EGLCompositorTexture::getTextureID()
 {
-    m_fbo->texture();
+    if(m_fbo){
+        m_fbo->texture();
+    }
+    else{
+        return 0;
+    }
 }
 
 void EGLCompositorTexture::render_async()

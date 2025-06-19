@@ -11,11 +11,12 @@
 #include "egl_function/eglhelper.h"
 #include "egl_function/eglrender.h"
 #include "render_tool/isource.h"
+#include "render_tool/compositor.h"
 
 class GstEncoder : public QObject, public iEssentialRenderingTools {
     Q_OBJECT
 public:
-    explicit GstEncoder(QString name, int id, iSource* source, QRect cropTextureSize, int w, int h, QObject *parent = nullptr);
+    explicit GstEncoder(QString name, int id, iSource* source, QRect cropTextureSize, int w, int h, quint16 port, QObject *parent = nullptr);
     ~GstEncoder();
     QSurfaceFormat getFormat() override;
     QSurface* getSurface() override;
@@ -35,6 +36,7 @@ private:
     EGLHelper::TextureCropSize* m_textureCropSize = nullptr;
     QString e_name = "";
     int  e_id = 0;
+    quint16 m_port = 50000;
     QOffscreenSurface *m_offscreenSurface = nullptr;
     GstEncoderThread* m_gstEncoderThread = nullptr;
 
